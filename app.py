@@ -5,9 +5,6 @@ import datetime
 from typing import Dict, List, Optional
 import plotly.express as px
 
-# ===============================================================
-# PAGE CONFIG
-# ===============================================================
 st.set_page_config(
     page_title="Legal Doc AI - Hackathon Log",
     page_icon="⚖",
@@ -15,9 +12,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ===============================================================
-# CUSTOM CSS (kept from your original, trimmed a bit for size)
-# ===============================================================
 st.markdown("""
 <style>
     .main-header {
@@ -52,9 +46,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ===============================================================
-# DEMO USERS (usernames/passwords) — Member 4 is the Leader
-# ===============================================================
 USERS = {
     "Arryan":   {"password": "123",     "role": "API/Data Fetch", "is_leader": False},
     "Arth":     {"password": "123",     "role": "Backend 1",      "is_leader": False},
@@ -64,15 +55,12 @@ USERS = {
 
 TEAM_MEMBERS = {u: USERS[u]["role"] for u in USERS}
 
-# ===============================================================
-# STATE INIT
-# ===============================================================
 def _init_state():
     if "current_user" not in st.session_state:
         st.session_state.current_user = None
 
     if "logs" not in st.session_state:
-        st.session_state.logs: List[Dict] = []  # time-stamped log entries
+        st.session_state.logs: List[Dict] = []
 
     if "member_duties" not in st.session_state:
         st.session_state.member_duties = {
@@ -98,25 +86,16 @@ def _init_state():
             ],
         }
 
-    # Central tasks list: created by Leader, visible to members
     if "tasks" not in st.session_state:
         st.session_state.tasks: List[Dict] = []
-        # structure:
-        # {id, member, task, deadline (date), status: "Assigned|In Progress|Completed|Approved",
-        #  approved: bool, created_at, updated_at}
 
-    # Project timeline (leader adds milestones)
     if "timeline" not in st.session_state:
-        st.session_state.timeline: List[Dict] = []  # {title, start, end, notes}
+        st.session_state.timeline: List[Dict] = []
 
     if "id_counter" not in st.session_state:
         st.session_state.id_counter = 0
 
 _init_state()
-
-# ===============================================================
-# HELPERS
-# ===============================================================
 def _new_id(prefix="T"):
     st.session_state.id_counter += 1
     return f"{prefix}-{int(datetime.datetime.now().timestamp())}-{st.session_state.id_counter}"
@@ -127,20 +106,18 @@ def add_log_entry(member: str, task: str, status: str, time_spent: int, notes: s
         'member': member,
         'role': TEAM_MEMBERS.get(member, "Member"),
         'task': task,
-        'task_type': task_type,          # "Assigned Duty" | "Assigned Task" | "Custom"
-        'status': status,                # "Not Started" | "In Progress" | "Completed" | "Blocked"
+        'task_type': task_type,
+        'status': status,
         'time_spent': time_spent,
         'notes': notes,
         'linked_task_id': linked_task_id
     }
     st.session_state.logs.append(entry)
 
-    # If this log is for an assigned task, update task status accordingly
     if linked_task_id:
         for t in st.session_state.tasks:
             if t["id"] == linked_task_id:
                 t["updated_at"] = datetime.datetime.now()
-                # Sync task status with log status (up to Completed)
                 if status in ["In Progress"] and t["status"] == "Assigned":
                     t["status"] = "In Progress"
                 if status == "Completed":
@@ -199,7 +176,6 @@ Notes: {log['notes'] if log['notes'] else 'No additional notes'}
 ---
 """
 
-    # Summary statistics
     total_logs = len(st.session_state.logs)
     total_time = sum(log['time_spent'] for log in st.session_state.logs)
     completed_tasks = len([log for log in st.session_state.logs if log['status'] == 'Completed'])
@@ -257,9 +233,6 @@ PROJECT TIMELINE
 
     return content
 
-# ===============================================================
-# AUTH
-# ===============================================================
 def login_view():
     st.markdown('<h1 class="main-header">⚖ Legal Document AI - Hackathon Log</h1>', unsafe_allow_html=True)
     st.subheader("🔐 Team Login")
@@ -276,9 +249,6 @@ def login_view():
         else:
             st.error("Invalid username or password")
 
-# ===============================================================
-# SHARED WIDGETS
-# ===============================================================
 def header_and_banner():
     st.markdown('<h1 class="main-header">⚖ Legal Document AI - Hackathon Log</h1>', unsafe_allow_html=True)
     st.markdown("""
@@ -323,9 +293,6 @@ def sidebar_block(is_leader: bool):
         if is_leader:
             st.info("👑 You are viewing the Leader tools.")
 
-# ===============================================================
-# ANALYTICS / DASHBOARD (kept from your original)
-# ===============================================================
 def dashboard_tab():
     st.header("📊 Team Dashboard")
     if st.session_state.logs:
@@ -347,7 +314,6 @@ def dashboard_tab():
 
         st.divider()
 
-        # Charts
         df = pd.DataFrame(st.session_state.logs)
         colA, colB = st.columns(2)
 
@@ -367,7 +333,6 @@ def dashboard_tab():
             fig_bar.update_layout(showlegend=False)
             st.plotly_chart(fig_bar, use_container_width=True)
 
-        # Timeline chart
         df['timestamp'] = pd.to_datetime(df['timestamp'])
         daily_member_tasks = df.groupby([df['timestamp'].dt.date, 'member']).size().unstack(fill_value=0)
         fig_timeline = px.line(daily_member_tasks, title="📅 Daily Progress by Member", markers=True)
@@ -382,9 +347,6 @@ def dashboard_tab():
         </div>
         """, unsafe_allow_html=True)
 
-# ===============================================================
-# LOGS VIEW (FILTERS) — kept from your original, slightly trimmed
-# ===============================================================
 def all_logs_tab():
     st.header("📋 Complete Log History")
     if st.session_state.logs:
@@ -446,9 +408,6 @@ def all_logs_tab():
     else:
         st.info("📝 No logs to display yet! Start by adding your first log entry.")
 
-# ===============================================================
-# TEAM PROGRESS (CARDS) — kept, uses duties + stats
-# ===============================================================
 def team_progress_tab():
     st.header("👥 Individual Team Progress")
     if st.session_state.logs:
@@ -478,7 +437,6 @@ def team_progress_tab():
                 </div>
                 """, unsafe_allow_html=True)
 
-                # Recent activity
                 member_logs = [l for l in st.session_state.logs if l['member'] == member][-4:]
                 if member_logs:
                     st.write(f"📋 Recent Activity for {member}:")
@@ -497,9 +455,6 @@ def team_progress_tab():
     else:
         st.info("📊 No data available for team stats! Start logging your progress to see individual statistics.")
 
-# ===============================================================
-# MEMBER VIEW
-# ===============================================================
 def member_tabs(username: str):
     header_and_banner()
     sidebar_block(is_leader=False)
@@ -510,7 +465,6 @@ def member_tabs(username: str):
         st.header("🚀 Log Your Progress")
         col1, col2 = st.columns(2)
         with col1:
-            # Member can choose from: Assigned Duty (duties list), Assigned Task (leader), or Custom
             task_type = st.radio("📋 Task Type:", ["Assigned Duty", "Assigned Task", "Custom Task"])
             if task_type == "Assigned Duty":
                 duties = st.session_state.member_duties.get(username, [])
@@ -548,11 +502,9 @@ def member_tabs(username: str):
             else:
                 st.error("❌ Please enter a task description!")
 
-    # ---- Dashboard
     with tab2:
         dashboard_tab()
 
-    # ---- View My Logs
     with tab3:
         if st.session_state.logs:
             my_logs = [l for l in st.session_state.logs if l['member'] == username]
@@ -575,14 +527,12 @@ def member_tabs(username: str):
         else:
             st.info("No logs yet.")
 
-    # ---- My Assigned Tasks
     with tab4:
         st.subheader("🗂 Assigned Tasks")
         my_tasks = [t for t in st.session_state.tasks if t["member"] == username]
         if not my_tasks:
             st.info("You have no assigned tasks yet.")
         else:
-            # Quick status update
             for t in sorted(my_tasks, key=lambda x: (x['approved'], x['status']!="Approved", x.get("deadline") or datetime.date.today())):
                 st.write(f"**{t['id']}** — {t['task']}  \n"
                          f"Deadline: `{t['deadline']}` | Status: **{t['status']}** | Approved: **{t['approved']}**")
@@ -593,9 +543,6 @@ def member_tabs(username: str):
                         t["status"] = "Completed"; t["updated_at"] = datetime.datetime.now(); st.rerun()
                 st.divider()
 
-# ===============================================================
-# LEADER VIEW
-# ===============================================================
 def leader_tabs():
     header_and_banner()
     sidebar_block(is_leader=True)
@@ -604,7 +551,6 @@ def leader_tabs():
         ["📅 Assign & Timeline", "📊 Dashboard", "📋 View All Logs", "👥 Team Progress", "🗂 Tasks & Approvals"]
     )
 
-    # ---- Assign & Timeline
     with tab_assign:
         st.subheader("📝 Assign Tasks (Bulk / Round-Robin)")
         c1, c2 = st.columns([2,1])
@@ -619,7 +565,6 @@ def leader_tabs():
                 if not lines or not members:
                     st.error("Please enter at least one task and select members.")
                 else:
-                    # Round-robin assignment to selected members
                     for i, task in enumerate(lines):
                         assigned_to = members[i % len(members)]
                         st.session_state.tasks.append({
@@ -653,24 +598,19 @@ def leader_tabs():
             })
             st.success("Milestone added.")
 
-        # Simple timeline table
         if st.session_state.timeline:
             tl_df = pd.DataFrame(st.session_state.timeline)
             st.dataframe(tl_df)
 
-    # ---- Dashboard
     with tab_dashboard:
         dashboard_tab()
 
-    # ---- All Logs
     with tab_all_logs:
         all_logs_tab()
 
-    # ---- Team Progress
     with tab_progress:
         team_progress_tab()
 
-    # ---- Tasks & Approvals
     with tab_tasks:
         st.subheader("🗂 All Assigned Tasks")
         if not st.session_state.tasks:
@@ -694,7 +634,6 @@ def leader_tabs():
                 want = (f_approved == "Approved")
                 tasks = [t for t in tasks if t["approved"] == want]
 
-            # Approvals list
             for t in sorted(tasks, key=lambda x: (x["approved"], x["status"] != "Approved", x.get("deadline") or datetime.date.today())):
                 st.write(f"**{t['id']}** — {t['task']}  \n"
                          f"👤 {t['member']} | 📅 Deadline: `{t['deadline']}` | 📈 Status: **{t['status']}** | ✅ Approved: **{t['approved']}**")
@@ -724,16 +663,12 @@ def leader_tabs():
                         st.rerun()
                 st.divider()
 
-# ===============================================================
-# MAIN
-# ===============================================================
 def main():
     user = st.session_state.current_user
     if not user:
         login_view()
         return
 
-    # Route based on role
     if USERS[user]["is_leader"]:
         leader_tabs()
     else:
